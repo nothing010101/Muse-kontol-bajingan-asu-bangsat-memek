@@ -9,9 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-<!-- Library wallet v6: file lokal di repo/situs ini sendiri, TANPA CDN. -->
-<script src="./ethers.umd.min.js"></script>
-<script src="./wc-provider.umd.min.js"></script>
+<!-- Library wallet v6: file lokal di repo/situs ini sendiri, TANPA CDN. Library dipecah jadi bagian-bagian kecil lalu digabung lagi oleh loader di bawah. -->
 <style>
   :root{
     --bg:#FAFAF7; --surface:#FFFFFF; --surface2:#F1EFE9; --ink:#191C20; --ink2:#4B5563; --ink3:#6B7280;
@@ -187,18 +185,56 @@
 </div>
 
 <script>
-/* Library wallet v6: TIDAK ADA CDN. ethers + WalletConnect dimuat dari file
-   di repo/situs ini sendiri (./ethers.umd.min.js dan ./wc-provider.umd.min.js)
-   lewat <script src> statis di <head>. Blok ini cuma memeriksa hasilnya. */
+/* Library wallet v6: TIDAK ADA CDN. ethers + WalletConnect tinggal di repo/
+   situs ini sendiri sebagai file bagian (ethers.partNN.js, wc.partNN.js).
+   Loader ini mengambil tiap bagian dari situs ini, menggabungkannya,
+   lalu menjalankannya sebagai satu script. */
 (function(){
   function wcGlobal(){ return window.WalletConnectEthereumProvider || (window["@walletconnect/ethereum-provider"] && window["@walletconnect/ethereum-provider"].EthereumProvider); }
-  var ethOk = (typeof ethers !== "undefined");
-  var wcOk = !!wcGlobal();
-  var state = { ethers: ethOk ? "OK (dari situs ini)" : "GAGAL \u2014 file ethers.umd.min.js tidak termuat", wc: wcOk ? "OK (dari situs ini)" : "GAGAL \u2014 file wc-provider.umd.min.js tidak termuat" };
-  var el = document.getElementById("libStatus");
-  if(el) el.textContent = "Status library \u2014 ethers: " + state.ethers + " \u00b7 WalletConnect: " + state.wc;
-  var bc = document.getElementById("btnConnect"); if(bc){ var canConnect = ethOk && (!!window.ethereum || wcOk); bc.disabled = !canConnect; if(canConnect) bc.textContent = "Connect Wallet"; }
-  if(ethOk){ var le = document.getElementById("libError"); if(le && le.innerHTML.indexOf("Data kontrak") === -1) le.style.display = "none"; }
+  var ETHERS_PARTS = ["./ethers.part01.js", "./ethers.part02.js", "./ethers.part03.js", "./ethers.part04.js", "./ethers.part05.js", "./ethers.part06.js", "./ethers.part07.js"];
+  var WC_PARTS = ["./wc.part01.js", "./wc.part02.js", "./wc.part03.js", "./wc.part04.js", "./wc.part05.js", "./wc.part06.js", "./wc.part07.js", "./wc.part08.js", "./wc.part09.js", "./wc.part10.js"];
+  var state = { ethers: "memuat dari situs ini\u2026", wc: "memuat dari situs ini\u2026" };
+  function render(){
+    var el = document.getElementById("libStatus");
+    if(el) el.textContent = "Status library \u2014 ethers: " + state.ethers + " \u00b7 WalletConnect: " + state.wc;
+  }
+  function setReady(){
+    var ethOk = (typeof ethers !== "undefined");
+    var wcOk = !!wcGlobal();
+    var bc = document.getElementById("btnConnect"); if(bc){ var canConnect = ethOk && (!!window.ethereum || wcOk); bc.disabled = !canConnect; if(canConnect) bc.textContent = "Connect Wallet"; }
+    if(ethOk){ var le = document.getElementById("libError"); if(le && le.innerHTML.indexOf("Data kontrak") === -1) le.style.display = "none"; }
+    render();
+  }
+  function loadLib(parts){
+    var chain = Promise.resolve("");
+    parts.forEach(function(u){
+      chain = chain.then(function(code){
+        return fetch(u).then(function(r){ if(!r.ok) throw new Error(u + " HTTP " + r.status); return r.text(); }).then(function(t){ return code + t; });
+      });
+    });
+    return chain.then(function(code){
+      return new Promise(function(res, rej){
+        var url = URL.createObjectURL(new Blob([code], {type:"text/javascript"}));
+        var s = document.createElement("script");
+        s.onload = function(){ res(true); };
+        s.onerror = function(){ rej(new Error("gagal menjalankan script gabungan")); };
+        s.src = url; document.head.appendChild(s);
+      });
+    });
+  }
+  render();
+  loadLib(ETHERS_PARTS).then(function(){
+    state.ethers = (typeof ethers !== "undefined") ? "OK (dari situs ini)" : "GAGAL \u2014 file ethers tidak termuat";
+    render();
+    return loadLib(WC_PARTS);
+  }).then(function(){
+    state.wc = wcGlobal() ? "OK (dari situs ini)" : "GAGAL \u2014 file WalletConnect tidak termuat";
+    setReady();
+  }).catch(function(err){
+    if(typeof ethers === "undefined") state.ethers = "GAGAL \u2014 " + err.message;
+    else if(!wcGlobal()) state.wc = "GAGAL \u2014 " + err.message;
+    setReady();
+  });
 })();
 </script></script>
 </script>
