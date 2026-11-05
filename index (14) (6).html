@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>Puzzle Deploy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#FAFAF7; --surface:#FFFFFF; --surface2:#F1EFE9; --ink:#191C20; --ink2:#4B5563; --ink3:#6B7280;
+    --line:#E3E0D8; --accent:#B45309; --accent-bg:#FEF3C7; --accent-ink:#92400E;
+    --btn:#191C20; --btn-ink:#FFFFFF; --yellow:#F0B90B;
+    --ok:#15803D; --ok-bg:#DCFCE7; --warn:#B45309; --warn-bg:#FEF3C7; --err:#B91C1C; --err-bg:#FEE2E2;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#101215; --surface:#1A1D21; --surface2:#23262B; --ink:#F3F4F1; --ink2:#B6BBC2; --ink3:#8A919B;
+      --line:#2E3238; --accent:#F0B90B; --accent-bg:#3A2F10; --accent-ink:#FCD34D;
+      --btn:#F0B90B; --btn-ink:#191C20;
+      --ok:#4ADE80; --ok-bg:#14301F; --warn:#FBBF24; --warn-bg:#3A2F10; --err:#F87171; --err-bg:#3B1D1D;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px}
+  h1{font-size:27px;line-height:1.2;font-weight:800;margin:0 0 8px;letter-spacing:-.01em}
+  h2{font-size:18px;font-weight:800;margin:0 0 4px}
+  p{margin:0 0 10px}
+  .lede{color:var(--ink2);font-size:15.5px}
+  .mono{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+  .small{font-size:13.5px;color:var(--ink2)}
+  .step-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:26px 0 8px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 12px}
+  .card.locked{opacity:.62}
+  .card.done{border-color:var(--ok)}
+  .alert{border-radius:12px;padding:13px 14px;font-size:14.5px;margin:0 0 12px;border:1px solid transparent}
+  .alert.warn{background:var(--warn-bg);color:var(--ink);border-color:var(--warn)}
+  .alert.err{background:var(--err-bg);color:var(--ink);border-color:var(--err)}
+  .alert.ok{background:var(--ok-bg);color:var(--ink);border-color:var(--ok)}
+  .alert.info{background:var(--surface2);color:var(--ink);border-color:var(--line)}
+  .alert b{font-weight:800}
+  .seg{display:flex;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+  .seg button{flex:1;min-height:50px;border:0;border-radius:9px;background:transparent;color:var(--ink2);font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;padding:6px 4px}
+  .seg button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.14)}
+  .seg button .sub{display:block;font-size:11.5px;font-weight:500;color:var(--ink3)}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;border-radius:11px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font-family:var(--sans);font-size:16px;font-weight:700;cursor:pointer;padding:10px 14px;text-align:center}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .btn.yellow{background:var(--yellow);border-color:var(--yellow);color:#191C20}
+  .btn.danger{background:transparent;color:var(--err);border-color:var(--err)}
+  .btn.small{min-height:44px;font-size:14px;width:auto;padding:8px 14px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .btnrow .btn{flex:1;min-width:130px}
+  label.f{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}
+  input[type=text]{width:100%;min-height:50px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-family:var(--mono);font-size:13px;padding:10px 12px}
+  input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--ink2);flex-shrink:0}
+  .kv .v{font-weight:600;text-align:right;word-break:break-all}
+  .kv .v.mono{font-weight:400}
+  .badge{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:99px;vertical-align:middle}
+  .badge.wait{background:var(--surface2);color:var(--ink3)}
+  .badge.ready{background:var(--accent-bg);color:var(--accent-ink)}
+  .badge.busy{background:var(--accent-bg);color:var(--accent-ink)}
+  .badge.done{background:var(--ok-bg);color:var(--ok)}
+  .badge.fail{background:var(--err-bg);color:var(--err)}
+  .addrbox{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-top:8px}
+  a{color:var(--accent);font-weight:600}
+  .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.spinner{animation:none}}
+  details{margin-top:10px}
+  summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink2);min-height:32px}
+  ol.flow{margin:6px 0 0;padding-left:20px;font-size:14.5px;color:var(--ink2)}
+  ol.flow li{margin-bottom:7px}
+  ol.flow b{color:var(--ink)}
+  .statusline{font-size:14px;margin-top:10px;min-height:20px}
+  .statusline.err{color:var(--err);font-weight:600}
+  .statusline.ok{color:var(--ok);font-weight:600}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 0}
+  .checklist{list-style:none;margin:8px 0 0;padding:0;font-size:14.5px}
+  .checklist li{padding:8px 0 8px 30px;position:relative;border-bottom:1px dashed var(--line);color:var(--ink2)}
+  .checklist li:last-child{border-bottom:0}
+  .checklist li::before{content:"";position:absolute;left:2px;top:11px;width:15px;height:15px;border:2px solid var(--ink3);border-radius:4px}
+  .checklist li.done{color:var(--ink)}
+  .checklist li.done::before{background:var(--ok);border-color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Deploy Kontrak Puzzle NFT</h1>
+  <p class="lede">Empat kontrak, deploy satu per satu dari HP kamu. Halaman ini tidak pernah meminta private key — setiap deploy ditandatangani langsung di wallet kamu.</p>
+
+  <div class="alert warn">
+    <b>Wallet agent Binance (luna404.ai) TIDAK bisa dipakai deploy.</b>
+    Wallet itu MPC: tidak ada private key yang bisa diekspor, tidak bisa pairing WalletConnect, dan baw tidak punya perintah deploy.
+    Yang bisa deploy adalah <b>wallet EOA yang kamu kuasai sendiri</b> — dibuka dari browser bawaan wallet (MetaMask / Trust Wallet / Binance Web3) atau disambungkan lewat QR WalletConnect. Alamat yang tersambung selalu ditampilkan sebelum kamu deploy.
+  </div>
+
+  <div id="libError" class="alert err" style="display:none">
+    <b>Library wallet gagal dimuat.</b> Halaman tetap bisa dibaca, tapi tombol konek &amp; deploy tidak akan jalan. Cek koneksi internet kamu lalu muat ulang halaman ini.
+  </div>
+
+  <!-- ============ JARINGAN ============ -->
+  <p class="step-label">Langkah 1 — Jaringan</p>
+  <div class="seg" role="group" aria-label="Pilih jaringan">
+    <button type="button" id="net97" class="active">BSC Testnet<span class="sub">chain 97 · buat tes dulu</span></button>
+    <button type="button" id="net56">BSC Mainnet<span class="sub">chain 56 · deploy beneran</span></button>
+  </div>
+  <div id="netNote" class="alert info" style="margin-top:10px"></div>
+
+  <!-- ============ WALLET ============ -->
+  <p class="step-label">Langkah 2 — Sambungkan wallet</p>
+  <div class="card">
+    <div id="walletDisconnected">
+      <label class="f" for="wcProjectId">WalletConnect Project ID</label>
+      <input type="text" id="wcProjectId" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Tempel Project ID dari cloud.walletconnect.com" />
+      <p class="small" style="margin-top:6px">Sudah terisi ID punya kamu. ID ini cuma dipakai buat relay WalletConnect dan tersimpan di browser HP ini saja — boleh diganti kapan pun. Belum punya? Buat gratis di <b>cloud.walletconnect.com</b>.</p>
+      <div class="btnrow">
+        <p id="libStatus" style="font-size:13px;margin:10px 0;color:#f5c518">Status library — ethers: memuat · WalletConnect: memuat</p>
+    <button type="button" class="btn yellow" id="btnConnect" disabled>Memuat library wallet…</button>
+      </div>
+      <p class="small" style="margin-top:10px">Satu tombol: kalau dibuka dari dalam aplikasi wallet langsung tersambung; kalau dari browser biasa, muncul QR untuk dipindai pakai aplikasi wallet kamu.</p>
+      <div class="statusline err" id="connectError"></div>
+    </div>
+    <div id="walletConnected" style="display:none">
+      <div class="kv"><span class="k">Status</span><span class="v" style="color:var(--ok)">Tersambung</span></div>
+      <div class="kv"><span class="k">Lewat</span><span class="v" id="connVia">—</span></div>
+      <div class="kv"><span class="k">Alamat deployer</span><span class="v mono" id="connAddr">—</span></div>
+      <div class="kv"><span class="k">Jaringan wallet</span><span class="v" id="connChain">—</span></div>
+      <div class="kv"><span class="k">Saldo</span><span class="v" id="connBalance">—</span></div>
+      <div id="balanceWarn"></div>
+      <div class="btnrow">
+        <button type="button" class="btn ghost small" id="btnRefreshBal">Segarkan saldo</button>
+        <button type="button" class="btn ghost small" id="btnDisconnect">Putuskan</button>
+      </div>
+      <div class="statusline err" id="walletError"></div>
+    </div>
+  </div>
+
+  <!-- ============ DEPLOY ============ -->
+  <p class="step-label">Langkah 3 — Deploy satu per satu</p>
+  <p class="small" style="margin-bottom:12px">Urutannya wajib: tombol kontrak berikutnya baru aktif setelah kontrak sebelumnya berhasil. Argumen konstruktor terisi otomatis dari alamat hasil deploy. Perkiraan gas di bawah ini kasar — angka pastinya muncul di wallet kamu sebelum kamu menyetujui.</p>
+  <div id="deployCards"></div>
+
+  <!-- ============ RINGKASAN ============ -->
+  <p class="step-label">Hasil deploy</p>
+  <div class="card">
+    <div id="summaryBody"><p class="small" style="margin:0">Belum ada kontrak yang ter-deploy di jaringan ini.</p></div>
+    <div class="btnrow">
+      <button type="button" class="btn ghost" id="btnCopyAll">Salin semua alamat</button>
+      <button type="button" class="btn danger" id="btnReset">Reset jaringan ini</button>
+    </div>
+    <div class="statusline" id="summaryStatus"></div>
+    <p class="small">Alamat tersimpan di browser HP ini (per jaringan), jadi tetap ada kalau halaman ditutup dan dibuka lagi. Reset hanya menghapus catatan di halaman ini — kontrak yang sudah ter-deploy di chain tidak bisa dibatalkan.</p>
+  </div>
+
+  <!-- ============ SETELAH DEPLOY ============ -->
+  <hr class="sep" />
+  <p class="step-label">Setelah keempatnya beres</p>
+  <div class="card">
+    <h2>Tes alur penuh</h2>
+    <ol class="flow">
+      <li><b>Daftarkan handle</b> — panggil <span class="mono">registerAgent("luna404.ai")</span> di PuzzleRegistry (mainnet saja; kontrak men-strip “.ai” sendiri).</li>
+      <li><b>Daftarkan puzzle tes</b> — <span class="mono">registerPuzzle(puzzleId, contentHash, source)</span> di PuzzleRegistry.</li>
+      <li><b>Approve burn</b> — di TestToken: <span class="mono">approve(alamat PuzzleRegistry, 100000000000000000000000)</span> (100.000 TEST).</li>
+      <li><b>Buka clue</b> — <span class="mono">unlockClue(puzzleId)</span> di PuzzleRegistry; 100.000 TEST terbakar ke alamat dead.</li>
+      <li><b>Buat vault</b> — <span class="mono">createVault(puzzleId, wallet, bytes clue terenkripsi)</span> di ClueFactory.</li>
+      <li><b>Mint</b> — tanda tangani voucher pakai wallet verifier, lalu <span class="mono">mint(...)</span> di PuzzleNFT.</li>
+    </ol>
+    <p class="small" style="margin-top:10px">Catatan jujur soal clue: bytes di chain tetap bisa dibaca operator node. Brankas cuma membatasi siapa yang bisa memanggil <span class="mono">revealClue()</span> — clue asli harus dienkripsi di luar chain dengan kunci yang terikat ke alamat + Agent ID solver. Jangan simpan clue plaintext.</p>
+  </div>
+
+  <p class="small" style="margin-top:22px">Bytecode &amp; ABI keempat kontrak tertanam langsung di halaman ini dari file hasil compile (artifacts) — tidak diambil dari server mana pun saat halaman dibuka.</p>
+</div>
+
+<script>
+/* Loader library wallet v5: coba beberapa CDN berurutan + laporkan status.
+   Alasan: di HP luna, jsdelivr kadang lambat/diblokir dan tombol sempat aktif
+   sebelum library selesai dimuat, sehingga QR selalu gagal. */
+(function(){
+  var ETHERS_CDN = [
+    "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js",
+    "https://unpkg.com/ethers@6.13.4/dist/ethers.umd.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"
+  ];
+  var WC_CDN = [
+    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.min.js",
+    "https://unpkg.com/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.js",
+    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.js"
+  ];
+  function host(u){ try { return new URL(u).host; } catch(e){ return u; } }
+  var state = { ethers: "memuat", wc: "memuat" };
+  function wcGlobal(){ return window.WalletConnectEthereumProvider || (window["@walletconnect/ethereum-provider"] && window["@walletconnect/ethereum-provider"].EthereumProvider); }
+  function renderStatus(){
+    var el = document.getElementById("libStatus");
+    if(el) el.textContent = "Status library \u2014 ethers: " + state.ethers + " \u00b7 WalletConnect: " + state.wc;
+  }
+  function setReady(){
+    var ethOk = (typeof ethers !== "undefined");
+    var wcOk = !!wcGlobal();
+    var bc = document.getElementById("btnConnect"); if(bc){ var canConnect = ethOk && (!!window.ethereum || wcOk); bc.disabled = !canConnect; if(canConnect) bc.textContent = "Connect Wallet"; }
+    if(ethOk){ var le = document.getElementById("libError"); if(le && le.innerHTML.indexOf("Data kontrak") === -1) le.style.display = "none"; }
+    renderStatus();
+  }
+  function loadOne(urls, check, key){
+    var i = 0;
+    function next(){
+      if(i >= urls.length){ state[key] = "GAGAL di semua CDN"; setReady(); return; }
+      var url = urls[i++], s = document.createElement("script");
+      state[key] = "memuat (" + host(url) + ")\u2026"; renderStatus();
+      s.onload = function(){
+        if(check()){ state[key] = "OK (" + host(url) + ")"; setReady(); }
+        else { state[key] = "termuat tapi global tidak ditemukan \u2014 coba CDN berikut\u2026"; next(); }
+      };
+      s.onerror = function(){ next(); };
+      s.src = url; document.head.appendChild(s);
+    }
+    next();
+  }
+  loadOne(ETHERS_CDN, function(){ return typeof ethers !== "undefined"; }, "ethers");
+  loadOne(WC_CDN, function(){ return !!wcGlobal(); }, "wc");
+})();
+</script></script>
+</script>
+<script>
+(function(){
+"use strict";
+/* ================= DATA KONTRAK (tertanam dari artifacts) ================= */
+var CONTRACTS = {"TestToken":{"abi":[{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"allowance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"ERC20InsufficientAllowance","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"ERC20InsufficientBalance","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC20InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC20InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC20InvalidSender","type":"error"},{"inputs":[{"internalType":"address","name":"spender","type":"address"}],"name":"ERC20InvalidSpender","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"TOTAL_SUPPLY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801562000010575f80fd5b50604051806040016040528060048152602001631d195cdd60e21b81525060405180604001604052806004815260200163151154d560e21b81525081600390816200005c91906200029f565b5060046200006b82826200029f565b5050506200008c336b033b2e3c9fd0803ce80000006200009260201b60201c565b62000391565b6001600160a01b038216620000c15760405163ec442f0560e01b81525f60048201526024015b60405180910390fd5b620000ce5f8383620000d2565b5050565b6001600160a01b03831662000100578060025f828254620000f491906200036b565b90915550620001729050565b6001600160a01b0383165f9081526020819052604090205481811015620001545760405163391434e360e21b81526001600160a01b03851660048201526024810182905260448101839052606401620000b8565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166200019057600280548290039055620001ae565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef83604051620001f491815260200190565b60405180910390a3505050565b634e487b7160e01b5f52604160045260245ffd5b600181811c908216806200022a57607f821691505b6020821081036200024957634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156200029a57805f5260205f20601f840160051c81016020851015620002765750805b601f840160051c820191505b8181101562000297575f815560010162000282565b50505b505050565b81516001600160401b03811115620002bb57620002bb62000201565b620002d381620002cc845462000215565b846200024f565b602080601f83116001811462000309575f8415620002f15750858301515b5f19600386901b1c1916600185901b17855562000363565b5f85815260208120601f198616915b82811015620003395788860151825594840194600190910190840162000318565b50858210156200035757878501515f19600388901b60f8161c191681555b505060018460011b0185555b505050505050565b808201808211156200038b57634e487b7160e01b5f52601160045260245ffd5b92915050565b610718806200039f5f395ff3fe608060405234801561000f575f80fd5b506004361061009b575f3560e01c806370a082311161006357806370a0823114610114578063902d55a51461013c57806395d89b411461014f578063a9059cbb14610157578063dd62ed3e1461016a575f80fd5b806306fdde031461009f578063095ea7b3146100bd57806318160ddd146100e057806323b872dd146100f2578063313ce56714610105575b5f80fd5b6100a76101a2565b6040516100b49190610572565b60405180910390f35b6100d06100cb3660046105d9565b610232565b60405190151581526020016100b4565b6002545b6040519081526020016100b4565b6100d0610100366004610601565b61024b565b604051601281526020016100b4565b6100e461012236600461063a565b6001600160a01b03165f9081526020819052604090205490565b6100e46b033b2e3c9fd0803ce800000081565b6100a761026e565b6100d06101653660046105d9565b61027d565b6100e461017836600461065a565b6001600160a01b039182165f90815260016020908152604080832093909416825291909152205490565b6060600380546101b19061068b565b80601f01602080910402602001604051908101604052809291908181526020018280546101dd9061068b565b80156102285780601f106101ff57610100808354040283529160200191610228565b820191905f5260205f20905b81548152906001019060200180831161020b57829003601f168201915b5050505050905090565b5f3361023f81858561028a565b60019150505b92915050565b5f3361025885828561029c565b61026385858561031d565b506001949350505050565b6060600480546101b19061068b565b5f3361023f81858561031d565b610297838383600161037a565b505050565b6001600160a01b038381165f908152600160209081526040808320938616835292905220545f19811015610317578181101561030957604051637dc7a0d960e11b81526001600160a01b038416600482015260248101829052604481018390526064015b60405180910390fd5b61031784848484035f61037a565b50505050565b6001600160a01b03831661034657604051634b637e8f60e11b81525f6004820152602401610300565b6001600160a01b03821661036f5760405163ec442f0560e01b81525f6004820152602401610300565b61029783838361044c565b6001600160a01b0384166103a35760405163e602df0560e01b81525f6004820152602401610300565b6001600160a01b0383166103cc57604051634a1406b160e11b81525f6004820152602401610300565b6001600160a01b038085165f908152600160209081526040808320938716835292905220829055801561031757826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9258460405161043e91815260200190565b60405180910390a350505050565b6001600160a01b038316610476578060025f82825461046b91906106c3565b909155506104e69050565b6001600160a01b0383165f90815260208190526040902054818110156104c85760405163391434e360e21b81526001600160a01b03851660048201526024810182905260448101839052606401610300565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b03821661050257600280548290039055610520565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161056591815260200190565b60405180910390a3505050565b5f602080835283518060208501525f5b8181101561059e57858101830151858201604001528201610582565b505f604082860101526040601f19601f8301168501019250505092915050565b80356001600160a01b03811681146105d4575f80fd5b919050565b5f80604083850312156105ea575f80fd5b6105f3836105be565b946020939093013593505050565b5f805f60608486031215610613575f80fd5b61061c846105be565b925061062a602085016105be565b9150604084013590509250925092565b5f6020828403121561064a575f80fd5b610653826105be565b9392505050565b5f806040838503121561066b575f80fd5b610674836105be565b9150610682602084016105be565b90509250929050565b600181811c9082168061069f57607f821691505b6020821081036106bd57634e487b7160e01b5f52602260045260245ffd5b50919050565b8082018082111561024557634e487b7160e01b5f52601160045260245ffdfea2646970667358221220224d2bf5a16c020f0376f7d707a7691370bdaa4515745540bb85df1218f825a564736f6c63430008180033"},"PuzzleRegistry":{"abi":[{"inputs":[{"internalType":"address","name":"registry_","type":"address"},{"internalType":"address","name":"burnToken_","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"handle","type":"string"}],"name":"AgentRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"bool","name":"allowed","type":"bool"}],"name":"AllowlistedUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"string","name":"handle","type":"string"},{"indexed":false,"internalType":"uint256","name":"burned","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"ClueUnlocked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"registry","type":"address"}],"name":"HandleRegistryUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"contentHash","type":"bytes32"},{"indexed":false,"internalType":"string","name":"source","type":"string"}],"name":"PuzzleRegistered","type":"event"},{"inputs":[],"name":"BURN_ADDRESS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"BURN_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"agentHandle","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"allowlisted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"burnToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"clueUnlocked","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"handleRegistry","outputs":[{"internalType":"contract IHandleRegistry","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"wallet","type":"address"}],"name":"isAgent","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"puzzles","outputs":[{"internalType":"bytes32","name":"contentHash","type":"bytes32"},{"internalType":"string","name":"source","type":"string"},{"internalType":"bool","name":"exists","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"handle","type":"string"}],"name":"registerAgent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"internalType":"bytes32","name":"contentHash","type":"bytes32"},{"internalType":"string","name":"source","type":"string"}],"name":"registerPuzzle","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"wallet","type":"address"},{"internalType":"bool","name":"allowed","type":"bool"}],"name":"setAllowlisted","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"registry_","type":"address"}],"name":"setHandleRegistry","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"handle","type":"string"}],"name":"stripAiSuffix","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"puzzleId","type":"bytes32"}],"name":"unlockClue","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x60a060405234801562000010575f80fd5b5060405162001483380380620014838339810160408190526200003391620000f8565b8133806200005a57604051631e4fbdf760e01b81525f600482015260240160405180910390fd5b62000065816200008d565b50600180546001600160a01b0319166001600160a01b0392831617905516608052506200012e565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b80516001600160a01b0381168114620000f3575f80fd5b919050565b5f80604083850312156200010a575f80fd5b6200011583620000dc565b91506200012560208401620000dc565b90509250929050565b6080516113356200014e5f395f81816102bc015261046c01526113355ff3fe608060405234801561000f575f80fd5b5060043610610111575f3560e01c80639746e2921161009e578063c91f42211161006e578063c91f42211461027e578063df751b3514610291578063f2fde38b146102a4578063faa0a264146102b7578063fccc2813146102de575f80fd5b80639746e2921461020957806398fd6e9e1461021c5780639aa541811461023e578063b5bf34ee14610251575f80fd5b80632d2a9585116100e45780632d2a9585146101935780635ebbd692146101a6578063715018a6146101d15780637e2204b7146101d95780638da5cb5b146101f9575f80fd5b806303f45d411461011557806309ef4b221461014c5780631ffbb0641461016157806320ad6ae314610174575b5f80fd5b610137610123366004610dbb565b60026020525f908152604090205460ff1681565b60405190151581526020015b60405180910390f35b61015f61015a366004610ddd565b6102e7565b005b61013761016f366004610dbb565b610590565b61018569152d02c7e14af680000081565b604051908152602001610143565b61015f6101a1366004610e39565b610642565b6001546101b9906001600160a01b031681565b6040516001600160a01b039091168152602001610143565b61015f610878565b6101ec6101e7366004610e8c565b61088b565b6040516101439190610f7a565b5f546001600160a01b03166101b9565b61015f610217366004610f8c565b610a1c565b61022f61022a366004610ddd565b610af6565b60405161014393929190610fdb565b61015f61024c366004611012565b610ba1565b61013761025f366004611049565b600560209081525f928352604080842090915290825290205460ff1681565b6101ec61028c366004610dbb565b610c07565b61015f61029f366004610dbb565b610c9e565b61015f6102b2366004610dbb565b610cef565b6101b97f000000000000000000000000000000000000000000000000000000000000000081565b6101b961dead81565b6102f033610590565b6103345760405162461bcd60e51b815260206004820152601060248201526f1b9bdd08185b880b985a481859d95b9d60821b60448201526064015b60405180910390fd5b335f908152600460205260408120805461034d9061106c565b90501161038d5760405162461bcd60e51b815260206004820152600e60248201526d1c9959da5cdd195c88199a5c9cdd60921b604482015260640161032b565b5f8181526003602052604090206002015460ff166103de5760405162461bcd60e51b815260206004820152600e60248201526d756e6b6e6f776e2070757a7a6c6560901b604482015260640161032b565b5f81815260056020908152604080832033845290915290205460ff161561043f5760405162461bcd60e51b815260206004820152601560248201527418db1d5948185b1c9958591e481d5b9b1bd8dad959605a1b604482015260640161032b565b6040516323b872dd60e01b815233600482015261dead602482015269152d02c7e14af680000060448201527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906323b872dd906064016020604051808303815f875af11580156104ba573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104de91906110a4565b6105185760405162461bcd60e51b815260206004820152600b60248201526a189d5c9b8819985a5b195960aa1b604482015260640161032b565b5f81815260056020908152604080832033808552908352818420805460ff191660011790556004909252918290209151909183917f83d4147835512ebe97193399be1289bb52b2687d381f3b0a9988bae527a94b7b916105859169152d02c7e14af68000009042906110bf565b60405180910390a350565b6001600160a01b0381165f9081526002602052604081205460ff16156105b857506001919050565b6001546001600160a01b03166105cf57505f919050565b6001546040516370a0823160e01b81526001600160a01b0384811660048301525f9216906370a0823190602401602060405180830381865afa158015610617573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061063b9190611153565b1192915050565b6001546001600160a01b031661068c5760405162461bcd60e51b815260206004820152600f60248201526e1b9bc81c9959da5cdd1c9e481cd95d608a1b604482015260640161032b565b61069533610590565b6106d45760405162461bcd60e51b815260206004820152601060248201526f1b9bdd08185b880b985a481859d95b9d60821b604482015260640161032b565b5f61071383838080601f0160208091040260200160405190810160405280939291908181526020018383808284375f9201919091525061088b92505050565b90505f8151116107545760405162461bcd60e51b815260206004820152600c60248201526b656d7074792068616e646c6560a01b604482015260640161032b565b60015460405163076a53ed60e21b815233916001600160a01b031690631da94fb490610784908590600401610f7a565b602060405180830381865afa15801561079f573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107c3919061116a565b6001600160a01b0316146108195760405162461bcd60e51b815260206004820152601a60248201527f68616e646c65206e6f74206f776e65642062792063616c6c6572000000000000604482015260640161032b565b335f90815260046020526040902061083182826111d1565b50336001600160a01b03167fda816ca2fc37b9eecec62ae8263008ec6be1afb38dc28bc9c7c51d7e348da9c28260405161086b9190610f7a565b60405180910390a2505050565b610880610d2c565b6108895f610d58565b565b60605f829050600381511180156108d457508051601760f91b9082906108b390600390611291565b815181106108c3576108c36112b6565b01602001516001600160f81b031916145b801561091257508051606160f81b9082906108f190600290611291565b81518110610901576109016112b6565b01602001516001600160f81b031916145b801561095057508051606960f81b90829061092f90600190611291565b8151811061093f5761093f6112b6565b01602001516001600160f81b031916145b15610a15575f600382516109649190611291565b67ffffffffffffffff81111561097c5761097c610e78565b6040519080825280601f01601f1916602001820160405280156109a6576020820181803683370190505b5090505f5b600383516109b99190611291565b811015610a0d578281815181106109d2576109d26112b6565b602001015160f81c60f81b8282815181106109ef576109ef6112b6565b60200101906001600160f81b03191690815f1a9053506001016109ab565b509392505050565b5090919050565b610a24610d2c565b604051806060016040528084815260200183838080601f0160208091040260200160405190810160405280939291908181526020018383808284375f920182905250938552505060016020938401819052888352600384526040909220845181559284015191830191610a989150826111d1565b50604091820151600291909101805460ff19169115159190911790555184907f3652b8a818081f4b44eb71e78f8c33084f823b243d919b80fa6b3aaee9d54cb490610ae8908690869086906112ca565b60405180910390a250505050565b60036020525f908152604090208054600182018054919291610b179061106c565b80601f0160208091040260200160405190810160405280929190818152602001828054610b439061106c565b8015610b8e5780601f10610b6557610100808354040283529160200191610b8e565b820191905f5260205f20905b815481529060010190602001808311610b7157829003601f168201915b5050506002909301549192505060ff1683565b610ba9610d2c565b6001600160a01b0382165f81815260026020908152604091829020805460ff191685151590811790915591519182527f697f6c0f0b9dff6a3875de23e7ac574df904fe5735d914932ee61bee6296da8f910160405180910390a25050565b60046020525f908152604090208054610c1f9061106c565b80601f0160208091040260200160405190810160405280929190818152602001828054610c4b9061106c565b8015610c965780601f10610c6d57610100808354040283529160200191610c96565b820191905f5260205f20905b815481529060010190602001808311610c7957829003601f168201915b505050505081565b610ca6610d2c565b600180546001600160a01b0319166001600160a01b0383169081179091556040517fba3d3c93425b741a39afc949b13f3a2b7b93bc176030ca89ee5116398128bbc7905f90a250565b610cf7610d2c565b6001600160a01b038116610d2057604051631e4fbdf760e01b81525f600482015260240161032b565b610d2981610d58565b50565b5f546001600160a01b031633146108895760405163118cdaa760e01b815233600482015260240161032b565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6001600160a01b0381168114610d29575f80fd5b5f60208284031215610dcb575f80fd5b8135610dd681610da7565b9392505050565b5f60208284031215610ded575f80fd5b5035919050565b5f8083601f840112610e04575f80fd5b50813567ffffffffffffffff811115610e1b575f80fd5b602083019150836020828501011115610e32575f80fd5b9250929050565b5f8060208385031215610e4a575f80fd5b823567ffffffffffffffff811115610e60575f80fd5b610e6c85828601610df4565b90969095509350505050565b634e487b7160e01b5f52604160045260245ffd5b5f60208284031215610e9c575f80fd5b813567ffffffffffffffff80821115610eb3575f80fd5b818401915084601f830112610ec6575f80fd5b813581811115610ed857610ed8610e78565b604051601f8201601f19908116603f01168101908382118183101715610f0057610f00610e78565b81604052828152876020848701011115610f18575f80fd5b826020860160208301375f928101602001929092525095945050505050565b5f81518084525f5b81811015610f5b57602081850181015186830182015201610f3f565b505f602082860101526020601f19601f83011685010191505092915050565b602081525f610dd66020830184610f37565b5f805f8060608587031215610f9f575f80fd5b8435935060208501359250604085013567ffffffffffffffff811115610fc3575f80fd5b610fcf87828801610df4565b95989497509550505050565b838152606060208201525f610ff36060830185610f37565b90508215156040830152949350505050565b8015158114610d29575f80fd5b5f8060408385031215611023575f80fd5b823561102e81610da7565b9150602083013561103e81611005565b809150509250929050565b5f806040838503121561105a575f80fd5b82359150602083013561103e81610da7565b600181811c9082168061108057607f821691505b60208210810361109e57634e487b7160e01b5f52602260045260245ffd5b50919050565b5f602082840312156110b4575f80fd5b8151610dd681611005565b606081525f8085546110d08161106c565b806060860152608060018084165f81146110f1576001811461110d5761113c565b60ff1985166080890152608084151560051b890101955061113c565b8a5f526020805f205f5b868110156111325781548b8201870152908401908201611117565b8a01608001975050505b505050505060208301949094525060400152919050565b5f60208284031215611163575f80fd5b5051919050565b5f6020828403121561117a575f80fd5b8151610dd681610da7565b601f8211156111cc57805f5260205f20601f840160051c810160208510156111aa5750805b601f840160051c820191505b818110156111c9575f81556001016111b6565b50505b505050565b815167ffffffffffffffff8111156111eb576111eb610e78565b6111ff816111f9845461106c565b84611185565b602080601f831160018114611232575f841561121b5750858301515b5f19600386901b1c1916600185901b178555611289565b5f85815260208120601f198616915b8281101561126057888601518255948401946001909101908401611241565b508582101561127d57878501515f19600388901b60f8161c191681555b505060018460011b0185555b505050505050565b818103818111156112b057634e487b7160e01b5f52601160045260245ffd5b92915050565b634e487b7160e01b5f52603260045260245ffd5b83815260406020820152816040820152818360608301375f818301606090810191909152601f909201601f191601019291505056fea2646970667358221220abe984bf0c141579a750499c7362ee5ebb158b20dc54ce57995bff8f6686c4f864736f6c63430008180033"},"ClueFactory":{"abi":[{"inputs":[{"internalType":"address","name":"registry_","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"indexed":true,"internalType":"address","name":"solver","type":"address"},{"indexed":false,"internalType":"address","name":"vault","type":"address"}],"name":"VaultCreated","type":"event"},{"inputs":[{"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"internalType":"address","name":"solver","type":"address"},{"internalType":"bytes","name":"encryptedClue","type":"bytes"}],"name":"createVault","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"registry","outputs":[{"internalType":"contract IPuzzleRegistry","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"vaultOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}],"bytecode":"0x60a060405234801561000f575f80fd5b50604051610b9e380380610b9e83398101604081905261002e91610050565b6001600160a01b03166080525f80546001600160a01b0319163317905561007d565b5f60208284031215610060575f80fd5b81516001600160a01b0381168114610076575f80fd5b9392505050565b608051610b0361009b5f395f8181605e015261017b0152610b035ff3fe608060405234801561000f575f80fd5b5060043610610055575f3560e01c80637b103999146100595780638da5cb5b1461009c578063e678b900146100ae578063ed7e51f3146100e1578063f2fde38b146100f4575b5f80fd5b6100807f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200160405180910390f35b5f54610080906001600160a01b031681565b6100806100bc3660046103e8565b600160209081525f92835260408084209091529082529020546001600160a01b031681565b6100806100ef366004610412565b610109565b610107610102366004610492565b610333565b005b5f80546001600160a01b031633146101555760405162461bcd60e51b815260206004820152600a60248201526937b7363c9037bbb732b960b11b60448201526064015b60405180910390fd5b604051635adf9a7760e11b8152600481018690526001600160a01b0385811660248301527f0000000000000000000000000000000000000000000000000000000000000000169063b5bf34ee90604401602060405180830381865afa1580156101c0573d5f803e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101e491906104b2565b6102245760405162461bcd60e51b8152602060048201526011602482015270189d5c9b881b9bdd081c9958dbdc991959607a1b604482015260640161014c565b5f8581526001602090815260408083206001600160a01b03888116855292529091205416156102845760405162461bcd60e51b815260206004820152600c60248201526b7661756c742065786973747360a01b604482015260640161014c565b5f85858585604051610295906103c0565b6102a294939291906104d1565b604051809103905ff0801580156102bb573d5f803e3d5ffd5b505f8781526001602090815260408083206001600160a01b038a81168086529184529382902080546001600160a01b0319169486169485179055905192835292935088917f304aa9f7ab14b5831e1306de23e57e578219ce7ac3d80707716e419ab0119051910160405180910390a395945050505050565b5f546001600160a01b031633146103795760405162461bcd60e51b815260206004820152600a60248201526937b7363c9037bbb732b960b11b604482015260640161014c565b5f80546001600160a01b0319166001600160a01b038316908117825560405190917f04dba622d284ed0014ee4b9a6a68386be1a4c08a4913ae272de89199cc68616391a250565b6105b68061051883390190565b80356001600160a01b03811681146103e3575f80fd5b919050565b5f80604083850312156103f9575f80fd5b82359150610409602084016103cd565b90509250929050565b5f805f8060608587031215610425575f80fd5b84359350610435602086016103cd565b9250604085013567ffffffffffffffff80821115610451575f80fd5b818701915087601f830112610464575f80fd5b813581811115610472575f80fd5b886020828501011115610483575f80fd5b95989497505060200194505050565b5f602082840312156104a2575f80fd5b6104ab826103cd565b9392505050565b5f602082840312156104c2575f80fd5b815180151581146104ab575f80fd5b8481526001600160a01b03841660208201526060604082018190528101829052818360808301375f818301608090810191909152601f909201601f19160101939250505056fe60e060405234801561000f575f80fd5b506040516105b63803806105b683398101604081905261002e916100a1565b60808390526001600160a01b03821660a0523360c0525f61004f828261020f565b506040516001600160a01b0383169084907f936882bbd0eae4df5e86c42c65ac8765da124860f94ec01e96d762362946147f905f90a35050506102ce565b634e487b7160e01b5f52604160045260245ffd5b5f805f606084860312156100b3575f80fd5b8351602080860151919450906001600160a01b03811681146100d3575f80fd5b60408601519093506001600160401b03808211156100ef575f80fd5b818701915087601f830112610102575f80fd5b8151818111156101145761011461008d565b604051601f8201601f19908116603f0116810190838211818310171561013c5761013c61008d565b816040528281528a86848701011115610153575f80fd5b5f93505b828410156101745784840186015181850187015292850192610157565b5f8684830101528096505050505050509250925092565b600181811c9082168061019f57607f821691505b6020821081036101bd57634e487b7160e01b5f52602260045260245ffd5b50919050565b601f82111561020a57805f5260205f20601f840160051c810160208510156101e85750805b601f840160051c820191505b81811015610207575f81556001016101f4565b50505b505050565b81516001600160401b038111156102285761022861008d565b61023c81610236845461018b565b846101c3565b602080601f83116001811461026f575f84156102585750858301515b5f19600386901b1c1916600185901b1785556102c6565b5f85815260208120601f198616915b8281101561029d5788860151825594840194600190910190840161027e565b50858210156102ba57878501515f19600388901b60f8161c191681555b505060018460011b0185555b505050505050565b60805160a05160c0516102ba6102fc5f395f609701525f81816053015261011001525f60d301526102ba5ff3fe608060405234801561000f575f80fd5b506004361061004a575f3560e01c806349a7a26d1461004e578063c45a015514610092578063f6e3f8e6146100b9578063f9aa8ff1146100ce575b5f80fd5b6100757f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100757f000000000000000000000000000000000000000000000000000000000000000081565b6100c1610103565b6040516100899190610200565b6100f57f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610089565b6060336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146101735760405162461bcd60e51b815260206004820152600f60248201526e37b7363c903a34329039b7b63b32b960891b604482015260640160405180910390fd5b5f805461017f9061024c565b80601f01602080910402602001604051908101604052809291908181526020018280546101ab9061024c565b80156101f65780601f106101cd576101008083540402835291602001916101f6565b820191905f5260205f20905b8154815290600101906020018083116101d957829003601f168201915b5050505050905090565b5f602080835283518060208501525f5b8181101561022c57858101830151858201604001528201610210565b505f604082860101526040601f19601f8301168501019250505092915050565b600181811c9082168061026057607f821691505b60208210810361027e57634e487b7160e01b5f52602260045260245ffd5b5091905056fea2646970667358221220f8ee76dd064b002dadd95f2aeefc8ea5421af1d74ef240e9043012572a87ea3364736f6c63430008180033a264697066735822122093b607e7db90242b3e3b45eb0b20cc76c1f7df19765c08af9091a14b8898030164736f6c63430008180033"},"PuzzleNFT":{"abi":[{"inputs":[{"internalType":"address","name":"registry_","type":"address"},{"internalType":"address","name":"verifier_","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"ECDSAInvalidSignature","type":"error"},{"inputs":[{"internalType":"uint256","name":"length","type":"uint256"}],"name":"ECDSAInvalidSignatureLength","type":"error"},{"inputs":[{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"ECDSAInvalidSignatureS","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"bool","name":"allowed","type":"bool"}],"name":"AllowlistedUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"string","name":"baseTokenURI","type":"string"}],"name":"BaseTokenURIUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"registry","type":"address"}],"name":"HandleRegistryUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":true,"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"indexed":false,"internalType":"string","name":"agentId","type":"string"},{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"nonce","type":"uint256"}],"name":"Minted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"verifier","type":"address"}],"name":"VerifierUpdated","type":"event"},{"inputs":[],"name":"MAX_SUPPLY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"allowlisted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"baseTokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"handleRegistry","outputs":[{"internalType":"contract IHandleRegistry","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"wallet","type":"address"}],"name":"isAgent","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"puzzleId","type":"bytes32"},{"internalType":"string","name":"agentId","type":"string"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"mintedPuzzle","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"wallet","type":"address"},{"internalType":"bool","name":"allowed","type":"bool"}],"name":"setAllowlisted","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"baseTokenURI_","type":"string"}],"name":"setBaseTokenURI","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"registry_","type":"address"}],"name":"setHandleRegistry","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"verifier_","type":"address"}],"name":"setVerifier","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"handle","type":"string"}],"name":"stripAiSuffix","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalMinted","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"usedNonce","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"verifier","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}],"bytecode":"0x608060405234801562000010575f80fd5b506040516200229138038062002291833981016040819052620000339162000176565b81336040518060400160405280600a815260200169141d5e9e9b194813919560b21b8152506040518060400160405280600681526020016550555a5a4c4560d01b815250815f90816200008791906200024a565b5060016200009682826200024a565b5050506001600160a01b038116620000c757604051631e4fbdf760e01b81525f600482015260240160405180910390fd5b620000d28162000109565b50600780546001600160a01b039283166001600160a01b031991821617909155600a80549390921692169190911790555062000316565b600680546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0905f90a35050565b80516001600160a01b038116811462000171575f80fd5b919050565b5f806040838503121562000188575f80fd5b62000193836200015a565b9150620001a3602084016200015a565b90509250929050565b634e487b7160e01b5f52604160045260245ffd5b600181811c90821680620001d557607f821691505b602082108103620001f457634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156200024557805f5260205f20601f840160051c81016020851015620002215750805b601f840160051c820191505b8181101562000242575f81556001016200022d565b50505b505050565b81516001600160401b03811115620002665762000266620001ac565b6200027e81620002778454620001c0565b84620001fa565b602080601f831160018114620002b4575f84156200029c5750858301515b5f19600386901b1c1916600185901b1785556200030e565b5f85815260208120601f198616915b82811015620002e457888601518255948401946001909101908401620002c3565b50858210156200030257878501515f19600388901b60f8161c191681555b505060018460011b0185555b505050505050565b611f6d80620003245f395ff3fe608060405234801561000f575f80fd5b50600436106101dc575f3560e01c806370a0823111610109578063a2309ff81161009e578063df751b351161006e578063df751b3514610407578063e985e9c51461041a578063f2fde38b1461042d578063fb35188a14610440575f80fd5b8063a2309ff8146103d0578063b88d4fde146103d9578063c87b56dd146103ec578063d547cfb7146103ff575f80fd5b806395d89b41116100d957806395d89b41146103805780639723fb6d146103885780639aa54181146103aa578063a22cb465146103bd575f80fd5b806370a0823114610341578063715018a6146103545780637e2204b71461035c5780638da5cb5b1461036f575f80fd5b80632b7ac3f31161017f5780635437988d1161014f5780635437988d146102f55780635ebbd692146103085780636352211e1461031b5780636668717f1461032e575f80fd5b80632b7ac3f3146102a557806330176e13146102b857806332cb6b0c146102cb57806342842e0e146102e2575f80fd5b8063081812fc116101ba578063081812fc1461023f578063095ea7b31461026a5780631ffbb0641461027f57806323b872dd14610292575f80fd5b806301ffc9a7146101e057806303f45d411461020857806306fdde031461022a575b5f80fd5b6101f36101ee366004611864565b61046d565b60405190151581526020015b60405180910390f35b6101f361021636600461189a565b60086020525f908152604090205460ff1681565b6102326104be565b6040516101ff9190611900565b61025261024d366004611912565b61054d565b6040516001600160a01b0390911681526020016101ff565b61027d610278366004611929565b610574565b005b6101f361028d36600461189a565b610583565b61027d6102a0366004611951565b610635565b600a54610252906001600160a01b031681565b61027d6102c63660046119cf565b6106c3565b6102d461037881565b6040519081526020016101ff565b61027d6102f0366004611951565b610716565b61027d61030336600461189a565b610735565b600754610252906001600160a01b031681565b610252610329366004611912565b610786565b61027d61033c366004611a0e565b610790565b6102d461034f36600461189a565b610a88565b61027d610acd565b61023261036a366004611b1b565b610ae0565b6006546001600160a01b0316610252565b610232610c71565b6101f3610396366004611912565b600c6020525f908152604090205460ff1681565b61027d6103b8366004611b60565b610c80565b61027d6103cb366004611b60565b610ce6565b6102d460095481565b61027d6103e7366004611b99565b610cf1565b6102326103fa366004611912565b610d09565b610232610d6e565b61027d61041536600461189a565b610dfa565b6101f3610428366004611c10565b610e4b565b61027d61043b36600461189a565b610e78565b6101f361044e366004611c41565b600d60209081525f928352604080842090915290825290205460ff1681565b5f6001600160e01b031982166380ac58cd60e01b148061049d57506001600160e01b03198216635b5e139f60e01b145b806104b857506301ffc9a760e01b6001600160e01b03198316145b92915050565b60605f80546104cc90611c62565b80601f01602080910402602001604051908101604052809291908181526020018280546104f890611c62565b80156105435780601f1061051a57610100808354040283529160200191610543565b820191905f5260205f20905b81548152906001019060200180831161052657829003601f168201915b5050505050905090565b5f61055782610eb5565b505f828152600460205260409020546001600160a01b03166104b8565b61057f828233610eed565b5050565b6001600160a01b0381165f9081526008602052604081205460ff16156105ab57506001919050565b6007546001600160a01b03166105c257505f919050565b6007546040516370a0823160e01b81526001600160a01b0384811660048301525f9216906370a0823190602401602060405180830381865afa15801561060a573d5f803e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061062e9190611c9a565b1192915050565b6001600160a01b03821661066357604051633250574960e11b81525f60048201526024015b60405180910390fd5b5f61066f838333610efa565b9050836001600160a01b0316816001600160a01b0316146106bd576040516364283d7b60e01b81526001600160a01b038086166004830152602482018490528216604482015260640161065a565b50505050565b6106cb610fec565b600b6106d8828483611cf5565b507fe6e4cd5c2dc7d2c20519b41832cd550fd3ea1186bf299d108179bf71fb8e00e5828260405161070a929190611dd7565b60405180910390a15050565b61073083838360405180602001604052805f815250610cf1565b505050565b61073d610fec565b600a80546001600160a01b0319166001600160a01b0383169081179091556040517fd24015cc99cc1700cafca3042840a1d8ac1e3964fd2e0e37ea29c654056ee327905f90a250565b5f6104b882610eb5565b61079933610583565b6107d85760405162461bcd60e51b815260206004820152601060248201526f1b9bdd08185b880b985a481859d95b9d60821b604482015260640161065a565b8242111561081a5760405162461bcd60e51b815260206004820152600f60248201526e1d9bdd58da195c88195e1c1a5c9959608a1b604482015260640161065a565b5f848152600c602052604090205460ff16156108655760405162461bcd60e51b815260206004820152600a6024820152691b9bdb98d9481d5cd95960b21b604482015260640161065a565b5f878152600d6020908152604080832033845290915290205460ff16156108c65760405162461bcd60e51b81526020600482015260156024820152741c1d5e9e9b1948185b1c9958591e481b5a5b9d1959605a1b604482015260640161065a565b610378600954106109045760405162461bcd60e51b81526020600482015260086024820152671cdbdb19081bdd5d60c21b604482015260640161065a565b5f87878733888860405160200161092096959493929190611dea565b6040516020818303038152906040528051906020012090505f61098384848080601f0160208091040260200160405190810160405280939291908181526020018383808284375f9201919091525061097d92508691506110199050565b9061104b565b600a549091506001600160a01b038083169116146109d15760405162461bcd60e51b815260206004820152600b60248201526a3130b2103b37bab1b432b960a91b604482015260640161065a565b5f868152600c602090815260408083208054600160ff1991821681179092558d8552600d8452828520338652909352908320805490921681179091556009805491929091610a20908490611e3e565b92505081905550610a3333600954611073565b88336001600160a01b03167f80817c371d4173460ca4c4eee051397f5b94f9cc4f62ec79ed06f6fa1fad8f618a8a6009548b604051610a759493929190611e51565b60405180910390a3505050505050505050565b5f6001600160a01b038216610ab2576040516322718ad960e21b81525f600482015260240161065a565b506001600160a01b03165f9081526003602052604090205490565b610ad5610fec565b610ade5f61108c565b565b60605f82905060038151118015610b2957508051601760f91b908290610b0890600390611e77565b81518110610b1857610b18611e8a565b01602001516001600160f81b031916145b8015610b6757508051606160f81b908290610b4690600290611e77565b81518110610b5657610b56611e8a565b01602001516001600160f81b031916145b8015610ba557508051606960f81b908290610b8490600190611e77565b81518110610b9457610b94611e8a565b01602001516001600160f81b031916145b15610c6a575f60038251610bb99190611e77565b67ffffffffffffffff811115610bd157610bd1611a94565b6040519080825280601f01601f191660200182016040528015610bfb576020820181803683370190505b5090505f5b60038351610c0e9190611e77565b811015610c6257828181518110610c2757610c27611e8a565b602001015160f81c60f81b828281518110610c4457610c44611e8a565b60200101906001600160f81b03191690815f1a905350600101610c00565b509392505050565b5090919050565b6060600180546104cc90611c62565b610c88610fec565b6001600160a01b0382165f81815260086020908152604091829020805460ff191685151590811790915591519182527f697f6c0f0b9dff6a3875de23e7ac574df904fe5735d914932ee61bee6296da8f910160405180910390a25050565b61057f3383836110dd565b610cfc848484610635565b6106bd33858585856111a4565b6060610d1482610eb5565b505f610d1e6112cc565b90505f815111610d3c5760405180602001604052805f815250610d67565b80610d46846112db565b604051602001610d57929190611e9e565b6040516020818303038152906040525b9392505050565b600b8054610d7b90611c62565b80601f0160208091040260200160405190810160405280929190818152602001828054610da790611c62565b8015610df25780601f10610dc957610100808354040283529160200191610df2565b820191905f5260205f20905b815481529060010190602001808311610dd557829003601f168201915b505050505081565b610e02610fec565b600780546001600160a01b0319166001600160a01b0383169081179091556040517fba3d3c93425b741a39afc949b13f3a2b7b93bc176030ca89ee5116398128bbc7905f90a250565b6001600160a01b039182165f90815260056020908152604080832093909416825291909152205460ff1690565b610e80610fec565b6001600160a01b038116610ea957604051631e4fbdf760e01b81525f600482015260240161065a565b610eb28161108c565b50565b5f818152600260205260408120546001600160a01b0316806104b857604051637e27328960e01b81526004810184905260240161065a565b610730838383600161136b565b5f828152600260205260408120546001600160a01b0390811690831615610f2657610f2681848661146f565b6001600160a01b03811615610f6057610f415f855f8061136b565b6001600160a01b0381165f90815260036020526040902080545f190190555b6001600160a01b03851615610f8e576001600160a01b0385165f908152600360205260409020805460010190555b5f8481526002602052604080822080546001600160a01b0319166001600160a01b0389811691821790925591518793918516917fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef91a4949350505050565b6006546001600160a01b03163314610ade5760405163118cdaa760e01b815233600482015260240161065a565b7f19457468657265756d205369676e6564204d6573736167653a0a3332000000005f908152601c91909152603c902090565b5f805f8061105986866114d3565b925092509250611069828261151c565b5090949350505050565b61057f828260405180602001604052805f8152506115d4565b600680546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0905f90a35050565b6001600160a01b0383166111065760405163a9fbf51f60e01b81525f600482015260240161065a565b6001600160a01b03821661113857604051630b61174360e31b81526001600160a01b038316600482015260240161065a565b6001600160a01b038381165f81815260056020908152604080832094871680845294825291829020805460ff191686151590811790915591519182527f17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31910160405180910390a3505050565b6001600160a01b0383163b156112c557604051630a85bd0160e11b81526001600160a01b0384169063150b7a02906111e6908890889087908790600401611ecc565b6020604051808303815f875af1925050508015611220575060408051601f3d908101601f1916820190925261121d91810190611f08565b60015b611287573d80801561124d576040519150601f19603f3d011682016040523d82523d5f602084013e611252565b606091505b5080515f0361127f57604051633250574960e11b81526001600160a01b038516600482015260240161065a565b805160208201fd5b6001600160e01b03198116630a85bd0160e11b146112c357604051633250574960e11b81526001600160a01b038516600482015260240161065a565b505b5050505050565b6060600b80546104cc90611c62565b60605f6112e7836115eb565b60010190505f8167ffffffffffffffff81111561130657611306611a94565b6040519080825280601f01601f191660200182016040528015611330576020820181803683370190505b5090508181016020015b5f19016f181899199a1a9b1b9c1cb0b131b232b360811b600a86061a8153600a850494508461133a57509392505050565b808061137f57506001600160a01b03821615155b15611440575f61138e84610eb5565b90506001600160a01b038316158015906113ba5750826001600160a01b0316816001600160a01b031614155b80156113cd57506113cb8184610e4b565b155b156113f65760405163a9fbf51f60e01b81526001600160a01b038416600482015260240161065a565b811561143e5783856001600160a01b0316826001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b92560405160405180910390a45b505b50505f90815260046020526040902080546001600160a01b0319166001600160a01b0392909216919091179055565b61147a8383836116c2565b610730576001600160a01b0383166114a857604051637e27328960e01b81526004810182905260240161065a565b60405163177e802f60e01b81526001600160a01b03831660048201526024810182905260440161065a565b5f805f835160410361150a576020840151604085015160608601515f1a6114fc88828585611726565b955095509550505050611515565b505081515f91506002905b9250925092565b5f82600381111561152f5761152f611f23565b03611538575050565b600182600381111561154c5761154c611f23565b0361156a5760405163f645eedf60e01b815260040160405180910390fd5b600282600381111561157e5761157e611f23565b0361159f5760405163fce698f760e01b81526004810182905260240161065a565b60038260038111156115b3576115b3611f23565b0361057f576040516335e2f38360e21b81526004810182905260240161065a565b6115de83836117ee565b610730335f8585856111a4565b5f8072184f03e93ff9f4daa797ed6e38ed64bf6a1f0160401b83106116295772184f03e93ff9f4daa797ed6e38ed64bf6a1f0160401b830492506040015b6d04ee2d6d415b85acef81000000008310611655576d04ee2d6d415b85acef8100000000830492506020015b662386f26fc10000831061167357662386f26fc10000830492506010015b6305f5e100831061168b576305f5e100830492506008015b612710831061169f57612710830492506004015b606483106116b1576064830492506002015b600a83106104b85760010192915050565b5f6001600160a01b0383161580159061171e5750826001600160a01b0316846001600160a01b031614806116fb57506116fb8484610e4b565b8061171e57505f828152600460205260409020546001600160a01b038481169116145b949350505050565b5f80807f7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a084111561175f57505f915060039050826117e4565b604080515f808252602082018084528a905260ff891692820192909252606081018790526080810186905260019060a0016020604051602081039080840390855afa1580156117b0573d5f803e3d5ffd5b5050604051601f1901519150506001600160a01b0381166117db57505f9250600191508290506117e4565b92505f91508190505b9450945094915050565b6001600160a01b03821661181757604051633250574960e11b81525f600482015260240161065a565b5f61182383835f610efa565b90506001600160a01b03811615610730576040516339e3563760e11b81525f600482015260240161065a565b6001600160e01b031981168114610eb2575f80fd5b5f60208284031215611874575f80fd5b8135610d678161184f565b80356001600160a01b0381168114611895575f80fd5b919050565b5f602082840312156118aa575f80fd5b610d678261187f565b5f5b838110156118cd5781810151838201526020016118b5565b50505f910152565b5f81518084526118ec8160208601602086016118b3565b601f01601f19169290920160200192915050565b602081525f610d6760208301846118d5565b5f60208284031215611922575f80fd5b5035919050565b5f806040838503121561193a575f80fd5b6119438361187f565b946020939093013593505050565b5f805f60608486031215611963575f80fd5b61196c8461187f565b925061197a6020850161187f565b9150604084013590509250925092565b5f8083601f84011261199a575f80fd5b50813567ffffffffffffffff8111156119b1575f80fd5b6020830191508360208285010111156119c8575f80fd5b9250929050565b5f80602083850312156119e0575f80fd5b823567ffffffffffffffff8111156119f6575f80fd5b611a028582860161198a565b90969095509350505050565b5f805f805f805f60a0888a031215611a24575f80fd5b87359650602088013567ffffffffffffffff80821115611a42575f80fd5b611a4e8b838c0161198a565b909850965060408a0135955060608a0135945060808a0135915080821115611a74575f80fd5b50611a818a828b0161198a565b989b979a50959850939692959293505050565b634e487b7160e01b5f52604160045260245ffd5b5f67ffffffffffffffff80841115611ac257611ac2611a94565b604051601f8501601f19908116603f01168101908282118183101715611aea57611aea611a94565b81604052809350858152868686011115611b02575f80fd5b858560208301375f602087830101525050509392505050565b5f60208284031215611b2b575f80fd5b813567ffffffffffffffff811115611b41575f80fd5b8201601f81018413611b51575f80fd5b61171e84823560208401611aa8565b5f8060408385031215611b71575f80fd5b611b7a8361187f565b915060208301358015158114611b8e575f80fd5b809150509250929050565b5f805f8060808587031215611bac575f80fd5b611bb58561187f565b9350611bc36020860161187f565b925060408501359150606085013567ffffffffffffffff811115611be5575f80fd5b8501601f81018713611bf5575f80fd5b611c0487823560208401611aa8565b91505092959194509250565b5f8060408385031215611c21575f80fd5b611c2a8361187f565b9150611c386020840161187f565b90509250929050565b5f8060408385031215611c52575f80fd5b82359150611c386020840161187f565b600181811c90821680611c7657607f821691505b602082108103611c9457634e487b7160e01b5f52602260045260245ffd5b50919050565b5f60208284031215611caa575f80fd5b5051919050565b601f82111561073057805f5260205f20601f840160051c81016020851015611cd65750805b601f840160051c820191505b818110156112c5575f8155600101611ce2565b67ffffffffffffffff831115611d0d57611d0d611a94565b611d2183611d1b8354611c62565b83611cb1565b5f601f841160018114611d52575f8515611d3b5750838201355b5f19600387901b1c1916600186901b1783556112c5565b5f83815260208120601f198716915b82811015611d815786850135825560209485019460019092019101611d61565b5086821015611d9d575f1960f88860031b161c19848701351681555b505060018560011b0183555050505050565b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b602081525f61171e602083018486611daf565b86815260a060208201525f611e0360a083018789611daf565b6001600160a01b039590951660408301525060608101929092526080909101529392505050565b634e487b7160e01b5f52601160045260245ffd5b808201808211156104b8576104b8611e2a565b606081525f611e64606083018688611daf565b6020830194909452506040015292915050565b818103818111156104b8576104b8611e2a565b634e487b7160e01b5f52603260045260245ffd5b5f8351611eaf8184602088016118b3565b835190830190611ec38183602088016118b3565b01949350505050565b6001600160a01b03858116825284166020820152604081018390526080606082018190525f90611efe908301846118d5565b9695505050505050565b5f60208284031215611f18575f80fd5b8151610d678161184f565b634e487b7160e01b5f52602160045260245ffdfea2646970667358221220258aefe6878b54be19ae49b53e69432f755c02261710f1c80ff21079063e332a64736f6c63430008180033"}};
+var HANDLE_REGISTRY = "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F";
+var ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+var DEFAULT_WC_ID = "67dbc0471e277caf4f3d6e035ec1c3a0";
+var NETWORKS = {
+  97:{id:97,name:"BSC Testnet",currency:"tBNB",scan:"https://testnet.bscscan.com",rpc:"https://data-seed-prebsc-1-s1.binance.org:8545"},
+  56:{id:56,name:"BSC Mainnet",currency:"BNB",scan:"https://bscscan.com",rpc:"https://bsc-dataseed.binance.org"}
+};
+/* Perkiraan gas kasar per deploy (gas unit) — ditandai perkiraan di UI */
+var GAS_GUESS = { TestToken:650000, PuzzleRegistry:1150000, ClueFactory:650000, PuzzleNFT:1950000 };
+var ORDER = ["TestToken","PuzzleRegistry","ClueFactory","PuzzleNFT"];
+var DESC = {
+  TestToken:"Token dummy “test” (TEST), supply 1B, dicetak ke wallet deployer. Buat ngetes burn 100.000 per clue.",
+  PuzzleRegistry:"Pendaftaran agen .ai + catatan burn buat buka clue. Gate .ai dicek ke registry SPACE ID.",
+  ClueFactory:"Membuat satu brankas clue (ClueVault) per pasangan puzzle + solver, setelah burn tercatat.",
+  PuzzleNFT:"NFT-nya: ERC-721, supply maksimal 888, mint hanya pakai voucher bertanda tangan verifier."
+};
+
+/* ================= STORAGE (selalu try/catch) ================= */
+function sGet(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } }
+function sSet(k,v){ try{ window.localStorage.setItem(k,v); }catch(e){} }
+function sDel(k){ try{ window.localStorage.removeItem(k); }catch(e){} }
+
+/* ================= STATE ================= */
+var chainId = 97;
+var deployed = {};       /* name -> {address, tx} untuk jaringan aktif */
+var eip1193 = null;      /* provider aktif (injected / walletconnect) */
+var wcProvider = null;
+var ethProvider = null;  /* ethers BrowserProvider */
+var signer = null;
+var myAddress = null;
+var viaLabel = "";
+var deploying = {};      /* name -> bool */
+var deployErr = {};      /* name -> string */
+var gasEst = {};         /* name -> string tampilan */
+
+function stateKey(){ return "puzzle-deploy:deployed:"+chainId; }
+function loadDeployed(){
+  deployed = {};
+  try{
+    var raw = sGet(stateKey());
+    if(raw){ var p = JSON.parse(raw); if(p && typeof p==="object") deployed = p; }
+  }catch(e){}
+}
+function saveDeployed(){ sSet(stateKey(), JSON.stringify(deployed)); }
+
+/* ================= HELPER UI ================= */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function shortAddr(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+function fmtGas(n){ return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,"."); }
+function explorerAddr(a){ return NETWORKS[chainId].scan+"/address/"+a; }
+function explorerTx(t){ return NETWORKS[chainId].scan+"/tx/"+t; }
+function copyText(t, doneEl){
+  function ok(){ if(doneEl) doneEl.textContent = "Tersalin."; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(ok,function(){ fallback(); });
+  } else fallback();
+  function fallback(){
+    var ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }catch(e){ if(doneEl) doneEl.textContent="Gagal menyalin — salin manual dari kotak alamat."; }
+    document.body.removeChild(ta);
+  }
+}
+
+/* ================= ARGUMEN KONSTRUKTOR ================= */
+function registryArg(){ return chainId===56 ? HANDLE_REGISTRY : ZERO_ADDR; }
+function argsFor(name){
+  if(name==="TestToken") return [];
+  if(name==="PuzzleRegistry") return [registryArg(), (deployed.TestToken||{}).address || "← alamat TestToken"];
+  if(name==="ClueFactory") return [(deployed.PuzzleRegistry||{}).address || "← alamat PuzzleRegistry"];
+  if(name==="PuzzleNFT") return [registryArg(), myAddress || "← alamat wallet kamu (verifier tes)"];
+  return [];
+}
+function argsReady(name){
+  if(name==="TestToken") return true;
+  if(name==="PuzzleRegistry") return !!(deployed.TestToken||{}).address;
+  if(name==="ClueFactory") return !!(deployed.PuzzleRegistry||{}).address;
+  if(name==="PuzzleNFT") return true; /* tidak tergantung kontrak lain, tapi tetap diurutkan di UI */
+  return false;
+}
+function prevDone(name){
+  var i = ORDER.indexOf(name);
+  if(i<=0) return true;
+  return !!(deployed[ORDER[i-1]]||{}).address;
+}
+
+/* ================= RENDER: JARINGAN ================= */
+function renderNetwork(){
+  $("net97").className = chainId===97 ? "active" : "";
+  $("net56").className = chainId===56 ? "active" : "";
+  var note = $("netNote");
+  if(chainId===97){
+    note.innerHTML = "<b>Mode tes (default).</b> Deploy di testnet pakai tBNB gratis dari faucet — kontraknya nyata tapi jaringannya jaringan tes. Di testnet registry .ai tidak ada, jadi argumen registry diisi alamat nol dan gate .ai jatuh ke <b>allowlist pemilik</b> (<span class='mono'>setAllowlisted</span>): hanya wallet yang kamu allowlist yang lolos <span class='mono'>isAgent</span>. Konsekuensinya, <span class='mono'>registerAgent</span> tidak bisa jalan di testnet — tes di sini buat memastikan deploy &amp; konstruktor beres. <b>Deploy beneran tetap di mainnet.</b>";
+  } else {
+    note.innerHTML = "<b>Ini deploy beneran (mainnet).</b> Pakai BNB asli dan alamatnya permanen di chain. Registry .ai <span class='mono'>"+esc(HANDLE_REGISTRY)+"</span> dipakai sebagai gate: hanya wallet pemegang handle .ai yang bisa daftar &amp; mint. Verifier PuzzleNFT = wallet kamu yang tersambung (fase tes). Perkiraan total gas keempat deploy ± 0,007 BNB di 1 gwei — <b>perkiraan kasar</b>, angka pasti muncul di wallet sebelum kamu menyetujui.";
+  }
+  loadDeployed();
+  renderCards();
+  renderSummary();
+  refreshWalletPanel();
+}
+
+/* ================= RENDER: KARTU DEPLOY ================= */
+function statusBadge(name){
+  if((deployed[name]||{}).address) return '<span class="badge done">Sudah deploy</span>';
+  if(deploying[name]) return '<span class="badge busy">Mengirim…</span>';
+  if(deployErr[name]) return '<span class="badge fail">Gagal</span>';
+  if(!prevDone(name)) return '<span class="badge wait">Menunggu urutan</span>';
+  if(!myAddress) return '<span class="badge wait">Menunggu wallet</span>';
+  return '<span class="badge ready">Siap deploy</span>';
+}
+function renderCards(){
+  var host = $("deployCards");
+  var html = "";
+  ORDER.forEach(function(name, idx){
+    var dep = deployed[name];
+    var locked = !prevDone(name);
+    var args = argsFor(name);
+    var canDeploy = myAddress && prevDone(name) && argsReady(name) && !dep && !deploying[name];
+    html += '<div class="card'+(locked?" locked":"")+(dep?" done":"")+'">';
+    html += "<h2>"+(idx+1)+". "+esc(name)+" "+statusBadge(name)+"</h2>";
+    html += '<p class="small">'+esc(DESC[name])+"</p>";
+    html += '<div class="kv"><span class="k">Argumen konstruktor</span><span class="v mono">'+esc(args.length?args.join(", "):"(tidak ada)")+"</span></div>";
+    if(name==="PuzzleRegistry"||name==="PuzzleNFT"){
+      html += '<p class="small" style="margin:4px 0 0">'+(chainId===56
+        ? "registry_ = registry SPACE ID Agent ID (terverifikasi on-chain)."+(name==="PuzzleNFT"?" verifier_ = wallet kamu yang tersambung.":"")
+        : "registry_ = alamat nol di testnet → gate .ai pakai allowlist pemilik.")+"</p>";
+    }
+    html += '<div class="kv"><span class="k">Perkiraan gas</span><span class="v">'+(gasEst[name]?esc(gasEst[name]):"± "+fmtGas(GAS_GUESS[name])+" gas (kasar)")+"</span></div>";
+    html += '<div class="kv"><span class="k">Deployer</span><span class="v mono">'+esc(myAddress||"belum tersambung")+"</span></div>";
+    if(dep && dep.address){
+      html += '<div class="addrbox"><div class="mono">'+esc(dep.address)+'</div>'
+        + '<div class="btnrow">'
+        + '<a class="btn ghost small" href="'+esc(explorerAddr(dep.address))+'" target="_blank" rel="noopener">Lihat di BscScan</a>'
+        + (dep.tx?'<a class="btn ghost small" href="'+esc(explorerTx(dep.tx))+'" target="_blank" rel="noopener">Transaksi deploy</a>':"")
+        + '<button type="button" class="btn ghost small" data-copy="'+esc(dep.address)+'">Salin alamat</button>'
+        + "</div></div>";
+    } else {
+      html += '<button type="button" class="btn" data-deploy="'+esc(name)+'" '+(canDeploy?"":"disabled")+">"
+        + (deploying[name] ? '<span class="spinner"></span> Menunggu tanda tangan &amp; konfirmasi…'
+           : (!myAddress ? "Sambungkan wallet dulu buat deploy "+esc(name)
+           : (!prevDone(name) ? "Deploy "+esc(ORDER[idx-1])+" dulu"
+           : "Deploy "+esc(name))))+"</button>";
+      if(deployErr[name]) html += '<div class="statusline err">'+esc(deployErr[name])+"</div>";
+      html += '<details><summary>Sudah deploy di tempat lain? Tempel alamatnya</summary>'
+        + '<input type="text" data-manual="'+esc(name)+'" placeholder="0x…" autocomplete="off" autocapitalize="none" spellcheck="false" />'
+        + '<div class="btnrow"><button type="button" class="btn ghost small" data-usemanual="'+esc(name)+'">Pakai alamat ini</button></div></details>';
+    }
+    html += "</div>";
+  });
+  host.innerHTML = html;
+  Array.prototype.forEach.call(host.querySelectorAll("[data-deploy]"), function(b){
+    b.addEventListener("click", function(){ doDeploy(b.getAttribute("data-deploy")); });
+  });
+  Array.prototype.forEach.call(host.querySelectorAll("[data-copy]"), function(b){
+    b.addEventListener("click", function(){ copyText(b.getAttribute("data-copy"), $("summaryStatus")); });
+  });
+  Array.prototype.forEach.call(host.querySelectorAll("[data-usemanual]"), function(b){
+    b.addEventListener("click", function(){
+      var name = b.getAttribute("data-usemanual");
+      var inp = host.querySelector('[data-manual="'+name+'"]');
+      var v = (inp.value||"").trim();
+      if(typeof ethers!=="undefined" && !ethers.isAddress(v)){ deployErr[name]="Alamat tidak valid."; renderCards(); return; }
+      if(!/^0x[0-9a-fA-F]{40}$/.test(v)){ deployErr[name]="Alamat tidak valid."; renderCards(); return; }
+      deployed[name]={address:v, tx:""}; delete deployErr[name]; saveDeployed(); renderCards(); renderSummary();
+    });
+  });
+}
+
+/* ================= RENDER: RINGKASAN ================= */
+function renderSummary(){
+  var body = $("summaryBody");
+  var rows = ORDER.filter(function(n){ return (deployed[n]||{}).address; });
+  if(!rows.length){ body.innerHTML = '<p class="small" style="margin:0">Belum ada kontrak yang ter-deploy di jaringan ini.</p>'; return; }
+  var html = "";
+  rows.forEach(function(n){
+    html += '<div class="kv"><span class="k">'+esc(n)+'</span><span class="v mono">'+esc(deployed[n].address)+"</span></div>";
+  });
+  html += '<p class="small" style="margin-top:8px">Jaringan: '+esc(NETWORKS[chainId].name)+" (chain "+chainId+")</p>";
+  body.innerHTML = html;
+}
+
+/* ================= WALLET ================= */
+function libOk(){ return typeof ethers!=="undefined"; }
+function setConnectError(msg){ $("connectError").textContent = msg||""; }
+function setWalletError(msg){ var e=$("walletError"); if(e) e.textContent = msg||""; }
+
+function refreshWalletPanel(){
+  var disc = $("walletDisconnected"), conn = $("walletConnected");
+  if(!myAddress){ disc.style.display=""; conn.style.display="none"; return; }
+  disc.style.display="none"; conn.style.display="";
+  $("connVia").textContent = viaLabel;
+  $("connAddr").textContent = myAddress;
+  updateBalance();
+}
+function updateBalance(){
+  if(!ethProvider || !myAddress) return;
+  ethProvider.getNetwork().then(function(net){
+    var cid = Number(net.chainId);
+    $("connChain").textContent = (NETWORKS[cid]?NETWORKS[cid].name:"Chain "+cid)+(cid===chainId?"":" — beda dari pilihan di atas!");
+    return ethProvider.getBalance(myAddress).then(function(bal){ return {bal:bal, cid:cid}; });
+  }).then(function(r){
+    var sym = NETWORKS[r.cid]?NETWORKS[r.cid].currency:"BNB";
+    var val = Number(ethers.formatEther(r.bal));
+    $("connBalance").textContent = val.toFixed(6)+" "+sym;
+    renderBalanceWarn(val, r.cid);
+  }).catch(function(){ $("connBalance").textContent="gagal dibaca"; });
+}
+function renderBalanceWarn(val, walletChain){
+  var box = $("balanceWarn"); box.innerHTML="";
+  if(walletChain!==chainId){
+    box.innerHTML = '<div class="alert err" style="margin-top:10px"><b>Jaringan wallet beda.</b> Wallet kamu di chain '+walletChain+', halaman ini di chain '+chainId+'. Ganti jaringan di wallet, atau ketuk deploy — halaman akan minta wallet pindah jaringan dulu.</div>';
+    return;
+  }
+  var remaining = ORDER.filter(function(n){ return !(deployed[n]||{}).address; });
+  if(!remaining.length) return;
+  var gasSum = remaining.reduce(function(s,n){ return s+GAS_GUESS[n]; },0);
+  var estBnb = gasSum * 1e-9 * 1; /* 1 gwei */
+  if(val < estBnb){
+    box.innerHTML = '<div class="alert err" style="margin-top:10px"><b>Saldo kemungkinan kurang.</b> Sisa '+remaining.length+' deploy butuh perkiraan ± '+estBnb.toFixed(4)+' '+esc(NETWORKS[chainId].currency)+' (dari ± '+fmtGas(gasSum)+' gas di 1 gwei — <b>perkiraan kasar</b>). Saldo kamu '+val.toFixed(6)+'. '+(chainId===97?"Ambil tBNB gratis dari faucet testnet BSC dulu.":"Tambah BNB dulu sebelum lanjut.")+"</div>";
+  } else if(chainId===56){
+    box.innerHTML = '<div class="alert info" style="margin-top:10px">Perkiraan biaya sisa '+remaining.length+' deploy: ± '+estBnb.toFixed(4)+' BNB (kasar, di 1 gwei). Saldo kamu cukup di atas angka itu.</div>';
+  }
+}
+
+function attachProvider(prov, label){
+  eip1193 = prov; viaLabel = label;
+  ethProvider = new ethers.BrowserProvider(prov);
+  return ethProvider.getSigner().then(function(s){
+    signer = s;
+    return s.getAddress();
+  }).then(function(addr){
+    myAddress = addr;
+    refreshWalletPanel(); renderCards();
+    estimateAllGas();
+    if(prov && typeof prov.on==="function"){
+      prov.on("accountsChanged", function(accs){
+        if(!accs || !accs.length){ disconnectWallet(); }
+        else { myAddress = accs[0]; ethProvider = new ethers.BrowserProvider(eip1193); ethProvider.getSigner().then(function(s){ signer=s; refreshWalletPanel(); renderCards(); }); }
+      });
+      prov.on("chainChanged", function(){ ethProvider = new ethers.BrowserProvider(eip1193); refreshWalletPanel(); renderCards(); });
+    }
+  });
+}
+
+function ensureChain(){
+  if(!eip1193) return Promise.resolve();
+  return eip1193.request({method:"eth_chainId"}).then(function(hex){
+    if(parseInt(hex,16)===chainId) return;
+    return eip1193.request({method:"wallet_switchEthereumChain", params:[{chainId:"0x"+chainId.toString(16)}]}).catch(function(err){
+      if(err && (err.code===4902 || /unrecognized|not added/i.test(err.message||""))){
+        var n = NETWORKS[chainId];
+        return eip1193.request({method:"wallet_addEthereumChain", params:[{chainId:"0x"+chainId.toString(16), chainName:n.name, nativeCurrency:{name:n.currency, symbol:n.currency, decimals:18}, rpcUrls:[n.rpc], blockExplorerUrls:[n.scan]}]});
+      }
+      throw err;
+    });
+  }).then(function(){
+    ethProvider = new ethers.BrowserProvider(eip1193);
+    return ethProvider.getSigner().then(function(s){ signer=s; });
+  });
+}
+
+function connectInjected(){
+  setConnectError("");
+  if(!libOk()){ setConnectError("Library wallet gagal dimuat — muat ulang halaman ini."); return; }
+  if(!window.ethereum){
+    setConnectError("Tidak ada wallet yang terdeteksi di browser ini. Buka halaman ini dari browser bawaan aplikasi wallet (MetaMask / Trust Wallet / Binance Web3), atau pakai tombol QR WalletConnect.");
+    return;
+  }
+  var prov = window.ethereum;
+  prov.request({method:"eth_requestAccounts"}).then(function(){
+    return attachProvider(prov, "Browser wallet (injected)");
+  }).then(function(){ return ensureChain(); }).then(function(){
+    refreshWalletPanel(); renderCards();
+  }).catch(function(err){
+    setConnectError("Gagal menyambung: "+((err&&err.message)||err));
+  });
+}
+
+function connectWC(){
+  setConnectError("");
+  if(!libOk()){ setConnectError("Library wallet gagal dimuat — muat ulang halaman ini."); return; }
+  var pid = ($("wcProjectId").value||"").trim();
+  if(!pid){
+    setConnectError("Project ID WalletConnect masih kosong. Tempel ID dari cloud.walletconnect.com dulu — tanpa ID itu, QR tidak bisa dibuat.");
+    return;
+  }
+  var WCEP = window.WalletConnectEthereumProvider || (window["@walletconnect/ethereum-provider"] && window["@walletconnect/ethereum-provider"].EthereumProvider);
+  if(!WCEP || !WCEP.init){
+    setConnectError("Library WalletConnect gagal dimuat — cek koneksi internet lalu muat ulang halaman ini, atau pakai browser wallet.");
+    return;
+  }
+  setConnectError("Membuka QR WalletConnect…");
+  WCEP.init({
+    projectId: pid,
+    chains: [chainId],
+    optionalChains: [56,97],
+    showQrModal: true,
+    rpcMap: { 56: NETWORKS[56].rpc, 97: NETWORKS[97].rpc },
+    metadata: { name:"Puzzle Deploy", description:"Deploy kontrak Puzzle NFT (TestToken, PuzzleRegistry, ClueFactory, PuzzleNFT) di BSC.", icons:[] }
+  }).then(function(prov){
+    wcProvider = prov;
+    return prov.connect();
+  }).then(function(){
+    setConnectError("");
+    return attachProvider(wcProvider, "WalletConnect (QR)");
+  }).then(function(){ return ensureChain(); }).then(function(){
+    refreshWalletPanel(); renderCards();
+  }).catch(function(err){
+    setConnectError("WalletConnect gagal: "+((err&&err.message)||err));
+  });
+}
+
+function disconnectWallet(){
+  if(wcProvider && wcProvider.disconnect){ try{ wcProvider.disconnect(); }catch(e){} }
+  eip1193=null; wcProvider=null; ethProvider=null; signer=null; myAddress=null; viaLabel="";
+  gasEst={};
+  refreshWalletPanel(); renderCards();
+}
+
+/* ================= ESTIMASI GAS ================= */
+function estimateAllGas(){
+  if(!ethProvider || !myAddress || !libOk()) return;
+  ORDER.forEach(function(name){
+    if((deployed[name]||{}).address || !argsReady(name)) return;
+    var c = CONTRACTS[name];
+    try{
+      var factory = new ethers.ContractFactory(c.abi, c.bytecode, signer);
+      factory.getDeployTransaction.apply(factory, argsFor(name)).then(function(tx){
+        return ethProvider.estimateGas(Object.assign({}, tx, {from:myAddress}));
+      }).then(function(g){
+        return ethProvider.getFeeData().then(function(fd){ return {g:g, fd:fd}; });
+      }).then(function(r){
+        var gp = r.fd && r.fd.gasPrice ? Number(ethers.formatUnits(r.fd.gasPrice,"gwei")) : 1;
+        var cost = Number(r.g) * (r.fd && r.fd.gasPrice ? Number(r.fd.gasPrice) : 1e9) / 1e18;
+        gasEst[name] = fmtGas(Number(r.g))+" gas · ± "+cost.toFixed(5)+" "+NETWORKS[chainId].currency+" di "+gp.toFixed(2)+" gwei (estimasi live)";
+        renderCards();
+      }).catch(function(){ /* estimasi gagal bukan masalah — angka kasar tetap tampil */ });
+    }catch(e){}
+  });
+}
+
+/* ================= DEPLOY ================= */
+function doDeploy(name){
+  if(!signer || !myAddress){ return; }
+  delete deployErr[name]; deploying[name]=true; renderCards();
+  ensureChain().then(function(){
+    var c = CONTRACTS[name];
+    var factory = new ethers.ContractFactory(c.abi, c.bytecode, signer);
+    var args = argsFor(name);
+    return factory.deploy.apply(factory, args);
+  }).then(function(contract){
+    return contract.waitForDeployment().then(function(){ return contract; });
+  }).then(function(contract){
+    return contract.getAddress().then(function(addr){
+      var receiptTx = "";
+      try{ var dt = contract.deploymentTransaction(); if(dt) receiptTx = dt.hash; }catch(e){}
+      deployed[name] = { address: addr, tx: receiptTx };
+      deploying[name]=false; saveDeployed();
+      renderCards(); renderSummary(); updateBalance(); estimateAllGas();
+    });
+  }).catch(function(err){
+    deploying[name]=false;
+    var msg = (err && (err.shortMessage || err.message)) || String(err);
+    if(/user rejected|denied/i.test(msg)) msg = "Dibatalkan di wallet — tanda tangan ditolak.";
+    deployErr[name] = "Deploy gagal: "+msg;
+    renderCards();
+  });
+}
+
+/* ================= INIT ================= */
+function init(){
+  if(!CONTRACTS){ $("libError").style.display=""; $("libError").innerHTML="<b>Data kontrak gagal tertanam di halaman.</b> Muat ulang halaman ini."; }
+  /* Library dimuat async oleh loader \u2014 status tampil di #libStatus, tombol aktif kalau sudah siap. */
+  /* Project ID: pakai yang tersimpan, kalau belum ada pakai ID default dari luna */
+  var savedPid = sGet("puzzle-deploy:wcProjectId");
+  var pid = savedPid || DEFAULT_WC_ID;
+  $("wcProjectId").value = pid;
+  if(!savedPid) sSet("puzzle-deploy:wcProjectId", pid);
+  $("wcProjectId").addEventListener("change", function(){ sSet("puzzle-deploy:wcProjectId", ($("wcProjectId").value||"").trim()); });
+  $("wcProjectId").addEventListener("input", function(){ sSet("puzzle-deploy:wcProjectId", ($("wcProjectId").value||"").trim()); });
+
+  $("net97").addEventListener("click", function(){ chainId=97; renderNetwork(); });
+  $("net56").addEventListener("click", function(){ chainId=56; renderNetwork(); });
+  $("btnConnect").addEventListener("click", function(){ if(window.ethereum){ connectInjected(); } else { connectWC(); } });
+  $("btnDisconnect").addEventListener("click", disconnectWallet);
+  $("btnRefreshBal").addEventListener("click", updateBalance);
+  $("btnCopyAll").addEventListener("click", function(){
+    var lines = ORDER.filter(function(n){ return (deployed[n]||{}).address; }).map(function(n){ return n+": "+deployed[n].address; });
+    if(!lines.length){ $("summaryStatus").textContent="Belum ada alamat buat disalin."; return; }
+    copyText(lines.join("\n"), $("summaryStatus"));
+  });
+  var resetArmed=false;
+  $("btnReset").addEventListener("click", function(){
+    if(!resetArmed){ resetArmed=true; $("btnReset").textContent="Yakin? Ketuk sekali lagi buat reset"; setTimeout(function(){ resetArmed=false; $("btnReset").textContent="Reset jaringan ini"; },4000); return; }
+    resetArmed=false; $("btnReset").textContent="Reset jaringan ini";
+    deployed={}; deployErr={}; gasEst={}; sDel(stateKey());
+    renderCards(); renderSummary(); refreshWalletPanel();
+    $("summaryStatus").textContent="Catatan deploy jaringan ini sudah dihapus dari browser ini.";
+  });
+
+  renderNetwork();
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+</script>
+<p style="font-size:12px;opacity:.65;text-align:center;margin:24px 0 8px">Versi halaman: v5 · 2026-11-06 · kalau masih tertulis v3, tutup tab lalu buka lagi linknya.</p>
+</body>
+</html>
