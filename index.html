@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<!-- Library wallet v6: file lokal di repo/situs ini sendiri, TANPA CDN. -->
+<script src="./ethers.umd.min.js"></script>
+<script src="./wc-provider.umd.min.js"></script>
 <style>
   :root{
     --bg:#FAFAF7; --surface:#FFFFFF; --surface2:#F1EFE9; --ink:#191C20; --ink2:#4B5563; --ink3:#6B7280;
@@ -126,7 +129,7 @@
       <input type="text" id="wcProjectId" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Tempel Project ID dari cloud.walletconnect.com" />
       <p class="small" style="margin-top:6px">Sudah terisi ID punya kamu. ID ini cuma dipakai buat relay WalletConnect dan tersimpan di browser HP ini saja — boleh diganti kapan pun. Belum punya? Buat gratis di <b>cloud.walletconnect.com</b>.</p>
       <div class="btnrow">
-        <p id="libStatus" style="font-size:13px;margin:10px 0;color:#f5c518">Status library — ethers: memuat · WalletConnect: memuat</p>
+        <p id="libStatus" style="font-size:13px;margin:10px 0;color:#f5c518">Status library — ethers: memuat dari situs ini · WalletConnect: memuat dari situs ini</p>
     <button type="button" class="btn yellow" id="btnConnect" disabled>Memuat library wallet…</button>
       </div>
       <p class="small" style="margin-top:10px">Satu tombol: kalau dibuka dari dalam aplikasi wallet langsung tersambung; kalau dari browser biasa, muncul QR untuk dipindai pakai aplikasi wallet kamu.</p>
@@ -184,51 +187,18 @@
 </div>
 
 <script>
-/* Loader library wallet v5: coba beberapa CDN berurutan + laporkan status.
-   Alasan: di HP luna, jsdelivr kadang lambat/diblokir dan tombol sempat aktif
-   sebelum library selesai dimuat, sehingga QR selalu gagal. */
+/* Library wallet v6: TIDAK ADA CDN. ethers + WalletConnect dimuat dari file
+   di repo/situs ini sendiri (./ethers.umd.min.js dan ./wc-provider.umd.min.js)
+   lewat <script src> statis di <head>. Blok ini cuma memeriksa hasilnya. */
 (function(){
-  var ETHERS_CDN = [
-    "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js",
-    "https://unpkg.com/ethers@6.13.4/dist/ethers.umd.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"
-  ];
-  var WC_CDN = [
-    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.min.js",
-    "https://unpkg.com/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.js",
-    "https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.2/dist/index.umd.js"
-  ];
-  function host(u){ try { return new URL(u).host; } catch(e){ return u; } }
-  var state = { ethers: "memuat", wc: "memuat" };
   function wcGlobal(){ return window.WalletConnectEthereumProvider || (window["@walletconnect/ethereum-provider"] && window["@walletconnect/ethereum-provider"].EthereumProvider); }
-  function renderStatus(){
-    var el = document.getElementById("libStatus");
-    if(el) el.textContent = "Status library \u2014 ethers: " + state.ethers + " \u00b7 WalletConnect: " + state.wc;
-  }
-  function setReady(){
-    var ethOk = (typeof ethers !== "undefined");
-    var wcOk = !!wcGlobal();
-    var bc = document.getElementById("btnConnect"); if(bc){ var canConnect = ethOk && (!!window.ethereum || wcOk); bc.disabled = !canConnect; if(canConnect) bc.textContent = "Connect Wallet"; }
-    if(ethOk){ var le = document.getElementById("libError"); if(le && le.innerHTML.indexOf("Data kontrak") === -1) le.style.display = "none"; }
-    renderStatus();
-  }
-  function loadOne(urls, check, key){
-    var i = 0;
-    function next(){
-      if(i >= urls.length){ state[key] = "GAGAL di semua CDN"; setReady(); return; }
-      var url = urls[i++], s = document.createElement("script");
-      state[key] = "memuat (" + host(url) + ")\u2026"; renderStatus();
-      s.onload = function(){
-        if(check()){ state[key] = "OK (" + host(url) + ")"; setReady(); }
-        else { state[key] = "termuat tapi global tidak ditemukan \u2014 coba CDN berikut\u2026"; next(); }
-      };
-      s.onerror = function(){ next(); };
-      s.src = url; document.head.appendChild(s);
-    }
-    next();
-  }
-  loadOne(ETHERS_CDN, function(){ return typeof ethers !== "undefined"; }, "ethers");
-  loadOne(WC_CDN, function(){ return !!wcGlobal(); }, "wc");
+  var ethOk = (typeof ethers !== "undefined");
+  var wcOk = !!wcGlobal();
+  var state = { ethers: ethOk ? "OK (dari situs ini)" : "GAGAL \u2014 file ethers.umd.min.js tidak termuat", wc: wcOk ? "OK (dari situs ini)" : "GAGAL \u2014 file wc-provider.umd.min.js tidak termuat" };
+  var el = document.getElementById("libStatus");
+  if(el) el.textContent = "Status library \u2014 ethers: " + state.ethers + " \u00b7 WalletConnect: " + state.wc;
+  var bc = document.getElementById("btnConnect"); if(bc){ var canConnect = ethOk && (!!window.ethereum || wcOk); bc.disabled = !canConnect; if(canConnect) bc.textContent = "Connect Wallet"; }
+  if(ethOk){ var le = document.getElementById("libError"); if(le && le.innerHTML.indexOf("Data kontrak") === -1) le.style.display = "none"; }
 })();
 </script></script>
 </script>
@@ -527,7 +497,7 @@ function connectWC(){
   }
   var WCEP = window.WalletConnectEthereumProvider || (window["@walletconnect/ethereum-provider"] && window["@walletconnect/ethereum-provider"].EthereumProvider);
   if(!WCEP || !WCEP.init){
-    setConnectError("Library WalletConnect gagal dimuat — cek koneksi internet lalu muat ulang halaman ini, atau pakai browser wallet.");
+    setConnectError("WalletConnect tidak termuat — file wc-provider.umd.min.js tidak ada di situs ini. Muat ulang halaman, atau buka dari dalam aplikasi wallet.");
     return;
   }
   setConnectError("Membuka QR WalletConnect…");
@@ -611,7 +581,7 @@ function doDeploy(name){
 /* ================= INIT ================= */
 function init(){
   if(!CONTRACTS){ $("libError").style.display=""; $("libError").innerHTML="<b>Data kontrak gagal tertanam di halaman.</b> Muat ulang halaman ini."; }
-  /* Library dimuat async oleh loader \u2014 status tampil di #libStatus, tombol aktif kalau sudah siap. */
+  /* Library dimuat dari file lokal di <head> \u2014 status tampil di #libStatus, tombol aktif kalau sudah siap. */
   /* Project ID: pakai yang tersimpan, kalau belum ada pakai ID default dari luna */
   var savedPid = sGet("puzzle-deploy:wcProjectId");
   var pid = savedPid || DEFAULT_WC_ID;
@@ -644,6 +614,6 @@ function init(){
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 </script>
-<p style="font-size:12px;opacity:.65;text-align:center;margin:24px 0 8px">Versi halaman: v5 · 2026-11-06 · kalau masih tertulis v3, tutup tab lalu buka lagi linknya.</p>
+<p style="font-size:12px;opacity:.65;text-align:center;margin:24px 0 8px">Versi halaman: v6 · 2026-11-06 · kalau masih tertulis v5, tutup tab lalu buka lagi linknya.</p>
 </body>
 </html>
